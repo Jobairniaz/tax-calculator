@@ -210,7 +210,6 @@ export default function App() {
 
       <View style={styles.header}>
         <Text style={styles.headerTitle}>BD Income Tax Calculator</Text>
-        <Text style={styles.headerSub}>FY 2025–26 · AY 2026–27</Text>
       </View>
 
       <ScrollView
