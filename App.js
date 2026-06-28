@@ -25,23 +25,156 @@ const TAX_FREE_LIMITS = {
   freedom_fighter: 525000,
 };
 
-const CATEGORIES = [
-  { key: 'general', label: 'General (Male < 65)' },
-  { key: 'women_senior', label: 'Women / Senior (65+)' },
-  { key: 'challenged_third', label: 'Physically Challenged / Third Gender' },
-  { key: 'freedom_fighter', label: 'Gazetted Freedom Fighter' },
-];
+// ─── Translations ─────────────────────────────────────────────────────────────
 
-// FY 2025-26: July 2025 → June 2026
-const FY_MONTHS = [
-  'Jul 2025', 'Aug 2025', 'Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025',
-  'Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'May 2026', 'Jun 2026',
-];
-
-const DEFAULT_PERIODS = () => [
-  { id: 1, fromIdx: 0, toIdx: 5, amount: '', isMonthly: true },
-  { id: 2, fromIdx: 6, toIdx: 11, amount: '', isMonthly: true },
-];
+const T = {
+  en: {
+    appTitle: 'BD Income Tax Calculator',
+    langBtn: 'বাংলা',
+    incomeDetails: 'Income Details',
+    annual: 'Annual',
+    monthly: 'Monthly',
+    byPeriod: 'By Period',
+    salariedIncome: 'Salaried Income',
+    salariedHint: 'Exemption = lower of (1/3 of annual gross) or BDT 5,00,000',
+    annualGross: 'Annual Gross Salary (BDT)',
+    monthlyGross: 'Monthly Gross Salary (BDT)',
+    annualPlaceholder: 'e.g. 1,200,000',
+    monthlyPlaceholder: 'e.g. 100,000',
+    annualEquiv: (v) => `Annual equivalent: BDT ${v}`,
+    periodHint: 'Split FY 2025–26 (Jul 2025 – Jun 2026) into salary periods',
+    addPeriod: '+ Add Period',
+    calcAnnualGross: 'Calculated Annual Gross',
+    annualBonuses: 'Annual Bonuses — optional',
+    perfBonus: 'Performance Bonus (BDT)',
+    festBonus: 'Festival Bonus (BDT)',
+    bonusPlaceholder50: 'e.g. 50,000',
+    bonusPlaceholder100: 'e.g. 100,000',
+    totalBonuses: 'Total Bonuses',
+    deductions: 'Deductions & Credits',
+    investment: 'Eligible Investment (BDT) — optional',
+    ait: 'Advance Income Tax / TDS Paid (BDT) — optional',
+    investPlaceholder: 'e.g. 100,000',
+    aitPlaceholder: 'e.g. 20,000',
+    taxpayerCat: 'Taxpayer Category',
+    disabledDependent: 'Parent/Guardian of Disabled Person',
+    disabledHint: '+BDT 50,000 additional tax-free limit',
+    calcBtn: 'Calculate Tax',
+    resetBtn: 'Reset',
+    errorMsg: 'Please enter a valid salary amount.',
+    resultTitle: 'Tax Calculation Summary',
+    grossAnnual: 'Gross Annual Salary',
+    perfBonusRow: '  · Performance Bonus',
+    festBonusRow: '  · Festival Bonus',
+    salaryExemption: 'Salary Exemption',
+    taxableIncome: 'Taxable Income',
+    taxFreeLimit: 'Tax-Free Limit',
+    slabHeader: 'Progressive Tax Breakdown',
+    grossTax: 'Gross Tax Payable',
+    rebate: 'Investment Tax Rebate',
+    taxAfterRebate: 'Tax After Rebate',
+    minTax: (v, applied) => `Minimum tax applicable: BDT ${v}${applied ? '  ← applied' : ''}`,
+    aitPaid: 'AIT / TDS Already Paid',
+    netTax: 'Net Tax Payable',
+    refundHint: (v) => `* AIT/TDS exceeds liability — possible refund of BDT ${v}.`,
+    footer: 'For reference only. Consult the NBR or a tax professional for official advice.',
+    currency: (v) => `BDT ${v}`,
+    deductCurrency: (v) => `− BDT ${v}`,
+    slabTax: (v) => `Tax: BDT ${v}`,
+    subtotal: (v) => `Subtotal for this period: BDT ${v}`,
+    periodLabel: (n) => `Period ${n}`,
+    months: (n) => `${n} mo`,
+    from: 'FROM',
+    to: 'TO',
+    perMonth: '/mo',
+    perYear: '/yr',
+    salaryAmountPlaceholder: 'Salary amount (BDT)',
+    freeUpTo: (v) => `Free up to BDT ${v}`,
+    categories: [
+      { key: 'general', label: 'General (Male < 65)' },
+      { key: 'women_senior', label: 'Women / Senior (65+)' },
+      { key: 'challenged_third', label: 'Physically Challenged / Third Gender' },
+      { key: 'freedom_fighter', label: 'Gazetted Freedom Fighter' },
+    ],
+    fyMonths: [
+      'Jul 2025', 'Aug 2025', 'Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025',
+      'Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'May 2026', 'Jun 2026',
+    ],
+  },
+  bn: {
+    appTitle: 'বাংলাদেশ আয়কর ক্যালকুলেটর',
+    langBtn: 'English',
+    incomeDetails: 'আয়ের বিবরণ',
+    annual: 'বার্ষিক',
+    monthly: 'মাসিক',
+    byPeriod: 'মেয়াদ অনুযায়ী',
+    salariedIncome: 'বেতনভোগী আয়',
+    salariedHint: 'ছাড় = বার্ষিক মোট বেতনের ১/৩ বা ৫,০০,০০০ টাকা — যেটি কম',
+    annualGross: 'বার্ষিক মোট বেতন (টাকা)',
+    monthlyGross: 'মাসিক মোট বেতন (টাকা)',
+    annualPlaceholder: 'যেমন: ১২,০০,০০০',
+    monthlyPlaceholder: 'যেমন: ১,০০,০০০',
+    annualEquiv: (v) => `বার্ষিক সমতুল্য: ${v} টাকা`,
+    periodHint: 'অর্থবছর ২০২৫-২৬ (জুলাই ২০২৫ – জুন ২০২৬) কে বেতন মেয়াদে ভাগ করুন',
+    addPeriod: '+ মেয়াদ যোগ করুন',
+    calcAnnualGross: 'গণনাকৃত বার্ষিক মোট বেতন',
+    annualBonuses: 'বার্ষিক বোনাস — ঐচ্ছিক',
+    perfBonus: 'পারফরম্যান্স বোনাস (টাকা)',
+    festBonus: 'উৎসব বোনাস (টাকা)',
+    bonusPlaceholder50: 'যেমন: ৫০,০০০',
+    bonusPlaceholder100: 'যেমন: ১,০০,০০০',
+    totalBonuses: 'মোট বোনাস',
+    deductions: 'ছাড় ও কর্তন',
+    investment: 'যোগ্য বিনিয়োগ (টাকা) — ঐচ্ছিক',
+    ait: 'অগ্রিম আয়কর / উৎসে কর্তিত কর (টাকা) — ঐচ্ছিক',
+    investPlaceholder: 'যেমন: ১,০০,০০০',
+    aitPlaceholder: 'যেমন: ২০,০০০',
+    taxpayerCat: 'করদাতার শ্রেণী',
+    disabledDependent: 'প্রতিবন্ধী ব্যক্তির পিতামাতা/অভিভাবক',
+    disabledHint: '+৫০,০০০ টাকা অতিরিক্ত করমুক্ত সীমা',
+    calcBtn: 'কর হিসাব করুন',
+    resetBtn: 'পুনরায় শুরু করুন',
+    errorMsg: 'অনুগ্রহ করে সঠিক বেতনের পরিমাণ লিখুন।',
+    resultTitle: 'কর গণনার সারসংক্ষেপ',
+    grossAnnual: 'মোট বার্ষিক বেতন',
+    perfBonusRow: '  · পারফরম্যান্স বোনাস',
+    festBonusRow: '  · উৎসব বোনাস',
+    salaryExemption: 'বেতন ছাড়',
+    taxableIncome: 'করযোগ্য আয়',
+    taxFreeLimit: 'করমুক্ত সীমা',
+    slabHeader: 'ধাপভিত্তিক কর বিভাজন',
+    grossTax: 'মোট প্রদেয় কর',
+    rebate: 'বিনিয়োগ কর রেয়াত',
+    taxAfterRebate: 'রেয়াতের পরে কর',
+    minTax: (v, applied) => `ন্যূনতম কর প্রযোজ্য: ${v} টাকা${applied ? '  ← প্রযোজ্য হয়েছে' : ''}`,
+    aitPaid: 'পূর্বে পরিশোধিত অগ্রিম/উৎসে কর',
+    netTax: 'নিট প্রদেয় কর',
+    refundHint: (v) => `* অগ্রিম/উৎসে কর দায়ের বেশি — সম্ভাব্য ফেরত: ${v} টাকা।`,
+    footer: 'শুধুমাত্র তথ্যের জন্য। সরকারি পরামর্শের জন্য জাতীয় রাজস্ব বোর্ড বা কর বিশেষজ্ঞের সাথে যোগাযোগ করুন।',
+    currency: (v) => `${v} টাকা`,
+    deductCurrency: (v) => `− ${v} টাকা`,
+    slabTax: (v) => `কর: ${v} টাকা`,
+    subtotal: (v) => `এই মেয়াদের মোট: ${v} টাকা`,
+    periodLabel: (n) => `মেয়াদ ${n}`,
+    months: (n) => `${n} মাস`,
+    from: 'থেকে',
+    to: 'পর্যন্ত',
+    perMonth: '/মাস',
+    perYear: '/বছর',
+    salaryAmountPlaceholder: 'বেতনের পরিমাণ (টাকা)',
+    freeUpTo: (v) => `${v} টাকা পর্যন্ত করমুক্ত`,
+    categories: [
+      { key: 'general', label: 'সাধারণ (পুরুষ < ৬৫)' },
+      { key: 'women_senior', label: 'মহিলা / প্রবীণ (৬৫+)' },
+      { key: 'challenged_third', label: 'শারীরিক প্রতিবন্ধী / তৃতীয় লিঙ্গ' },
+      { key: 'freedom_fighter', label: 'গেজেটভুক্ত মুক্তিযোদ্ধা' },
+    ],
+    fyMonths: [
+      'জুলাই ২০২৫', 'আগস্ট ২০২৫', 'সেপ্টেম্বর ২০২৫', 'অক্টোবর ২০২৫', 'নভেম্বর ২০২৫', 'ডিসেম্বর ২০২৫',
+      'জানুয়ারি ২০২৬', 'ফেব্রুয়ারি ২০২৬', 'মার্চ ২০২৬', 'এপ্রিল ২০২৬', 'মে ২০২৬', 'জুন ২০২৬',
+    ],
+  },
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -58,17 +191,26 @@ function calcSalaryExemption(gross) {
   return Math.min(gross / 3, 500000);
 }
 
-function calcTax(taxableIncome, taxFreeLimit) {
+function calcTax(taxableIncome, taxFreeLimit, lang) {
   if (taxableIncome <= taxFreeLimit) return { grossTax: 0, slabDetails: [] };
 
-  const slabs = [
-    { label: `First BDT ${fmt(taxFreeLimit)}`, limit: taxFreeLimit, rate: 0 },
-    { label: 'Next BDT 3,00,000', limit: 300000, rate: 0.10 },
-    { label: 'Next BDT 4,00,000', limit: 400000, rate: 0.15 },
-    { label: 'Next BDT 5,00,000', limit: 500000, rate: 0.20 },
-    { label: 'Next BDT 20,00,000', limit: 2000000, rate: 0.25 },
-    { label: 'Remaining Balance', limit: Infinity, rate: 0.30 },
-  ];
+  const slabs = lang === 'bn'
+    ? [
+        { label: `প্রথম ${fmt(taxFreeLimit)} টাকা`, limit: taxFreeLimit, rate: 0 },
+        { label: 'পরবর্তী ৩,০০,০০০ টাকা', limit: 300000, rate: 0.10 },
+        { label: 'পরবর্তী ৪,০০,০০০ টাকা', limit: 400000, rate: 0.15 },
+        { label: 'পরবর্তী ৫,০০,০০০ টাকা', limit: 500000, rate: 0.20 },
+        { label: 'পরবর্তী ২০,০০,০০০ টাকা', limit: 2000000, rate: 0.25 },
+        { label: 'অবশিষ্ট অংশ', limit: Infinity, rate: 0.30 },
+      ]
+    : [
+        { label: `First BDT ${fmt(taxFreeLimit)}`, limit: taxFreeLimit, rate: 0 },
+        { label: 'Next BDT 3,00,000', limit: 300000, rate: 0.10 },
+        { label: 'Next BDT 4,00,000', limit: 400000, rate: 0.15 },
+        { label: 'Next BDT 5,00,000', limit: 500000, rate: 0.20 },
+        { label: 'Next BDT 20,00,000', limit: 2000000, rate: 0.25 },
+        { label: 'Remaining Balance', limit: Infinity, rate: 0.30 },
+      ];
 
   let remaining = taxableIncome;
   let grossTax = 0;
@@ -100,14 +242,22 @@ function grossFromPeriods(periods) {
   }, 0);
 }
 
+const DEFAULT_PERIODS = () => [
+  { id: 1, fromIdx: 0, toIdx: 5, amount: '', isMonthly: true },
+  { id: 2, fromIdx: 6, toIdx: 11, amount: '', isMonthly: true },
+];
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [inputMode, setInputMode] = useState('annual'); // 'annual' | 'monthly' | 'period'
+  const [lang, setLang] = useState('en');
+  const t = T[lang];
+
+  const [inputMode, setInputMode] = useState('annual');
   const [grossSalary, setGrossSalary] = useState('');
   const [periods, setPeriods] = useState(DEFAULT_PERIODS());
   const [nextPeriodId, setNextPeriodId] = useState(3);
-  const [openPicker, setOpenPicker] = useState(null); // { id, field: 'from'|'to' }
+  const [openPicker, setOpenPicker] = useState(null);
 
   const [performanceBonus, setPerformanceBonus] = useState('');
   const [festivalBonus, setFestivalBonus] = useState('');
@@ -157,7 +307,7 @@ export default function App() {
     const aitPaid = parse(ait);
 
     if (gross <= 0) {
-      setResult({ error: 'Please enter a valid salary amount.' });
+      setResult({ error: t.errorMsg });
       return;
     }
 
@@ -166,7 +316,7 @@ export default function App() {
 
     const salaryExemption = isSalaried ? calcSalaryExemption(gross) : 0;
     const taxableIncome = Math.max(0, gross - salaryExemption);
-    const { grossTax, slabDetails } = calcTax(taxableIncome, taxFreeLimit);
+    const { grossTax, slabDetails } = calcTax(taxableIncome, taxFreeLimit, lang);
     const rebate = calcRebate(taxableIncome, inv);
     const taxAfterRebate = Math.max(0, grossTax - rebate);
     const minimumTax = taxableIncome > taxFreeLimit ? MINIMUM_TAX : 0;
@@ -201,6 +351,20 @@ export default function App() {
     setResult(null);
   }
 
+  function toggleLang() {
+    const next = lang === 'en' ? 'bn' : 'en';
+    setLang(next);
+    // Rebuild slab labels on next calculate
+    if (result && !result.error) {
+      let taxFreeLimit = TAX_FREE_LIMITS[category];
+      if (hasDisabledDependent) taxFreeLimit += 50000;
+      const salaryExemption = isSalaried ? calcSalaryExemption(result.gross) : 0;
+      const taxableIncome = Math.max(0, result.gross - salaryExemption);
+      const { grossTax, slabDetails } = calcTax(taxableIncome, taxFreeLimit, next);
+      setResult(prev => ({ ...prev, slabDetails, grossTax }));
+    }
+  }
+
   const periodGross = inputMode === 'period' ? grossFromPeriods(periods) : 0;
   const monthlyEquivalent = inputMode === 'monthly' ? parse(grossSalary) * 12 : 0;
 
@@ -209,7 +373,12 @@ export default function App() {
       <StatusBar barStyle="light-content" backgroundColor={GREEN} />
 
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>BD Income Tax Calculator</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>{t.appTitle}</Text>
+          <TouchableOpacity style={styles.langBtn} onPress={toggleLang} activeOpacity={0.8}>
+            <Text style={styles.langBtnText}>{t.langBtn}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -219,14 +388,13 @@ export default function App() {
       >
         {/* ── Income Details ── */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Income Details</Text>
+          <Text style={styles.sectionTitle}>{t.incomeDetails}</Text>
 
-          {/* Mode selector */}
           <View style={styles.modeTabs}>
             {[
-              { key: 'annual', label: 'Annual' },
-              { key: 'monthly', label: 'Monthly' },
-              { key: 'period', label: 'By Period' },
+              { key: 'annual', label: t.annual },
+              { key: 'monthly', label: t.monthly },
+              { key: 'period', label: t.byPeriod },
             ].map(m => (
               <TouchableOpacity
                 key={m.key}
@@ -241,9 +409,8 @@ export default function App() {
             ))}
           </View>
 
-          {/* Salaried toggle (all modes) */}
           <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>Salaried Income</Text>
+            <Text style={styles.toggleLabel}>{t.salariedIncome}</Text>
             <Switch
               value={isSalaried}
               onValueChange={setIsSalaried}
@@ -252,20 +419,17 @@ export default function App() {
             />
           </View>
           {isSalaried && (
-            <Text style={styles.hint}>
-              Exemption = lower of (1/3 of annual gross) or BDT 5,00,000
-            </Text>
+            <Text style={styles.hint}>{t.salariedHint}</Text>
           )}
 
-          {/* Annual / Monthly single input */}
           {inputMode !== 'period' && (
             <>
               <Text style={styles.label}>
-                {inputMode === 'annual' ? 'Annual' : 'Monthly'} Gross Salary (BDT)
+                {inputMode === 'annual' ? t.annualGross : t.monthlyGross}
               </Text>
               <TextInput
                 style={styles.input}
-                placeholder={inputMode === 'annual' ? 'e.g. 1,200,000' : 'e.g. 100,000'}
+                placeholder={inputMode === 'annual' ? t.annualPlaceholder : t.monthlyPlaceholder}
                 placeholderTextColor="#aaa"
                 keyboardType="numeric"
                 value={grossSalary}
@@ -273,18 +437,15 @@ export default function App() {
               />
               {inputMode === 'monthly' && monthlyEquivalent > 0 && (
                 <Text style={styles.convertHint}>
-                  Annual equivalent: BDT {fmt(monthlyEquivalent)}
+                  {t.annualEquiv(fmt(monthlyEquivalent))}
                 </Text>
               )}
             </>
           )}
 
-          {/* By Period input */}
           {inputMode === 'period' && (
             <>
-              <Text style={styles.hint}>
-                Split FY 2025–26 (Jul 2025 – Jun 2026) into salary periods
-              </Text>
+              <Text style={styles.hint}>{t.periodHint}</Text>
 
               {periods.map((period, idx) => (
                 <PeriodRow
@@ -296,17 +457,18 @@ export default function App() {
                   onUpdate={updatePeriod}
                   onRemove={removePeriod}
                   canRemove={periods.length > 1}
+                  t={t}
                 />
               ))}
 
               <TouchableOpacity style={styles.addPeriodBtn} onPress={addPeriod} activeOpacity={0.75}>
-                <Text style={styles.addPeriodBtnText}>+ Add Period</Text>
+                <Text style={styles.addPeriodBtnText}>{t.addPeriod}</Text>
               </TouchableOpacity>
 
               {periodGross > 0 && (
                 <View style={styles.periodTotalBox}>
-                  <Text style={styles.periodTotalLabel}>Calculated Annual Gross</Text>
-                  <Text style={styles.periodTotalValue}>BDT {fmt(periodGross)}</Text>
+                  <Text style={styles.periodTotalLabel}>{t.calcAnnualGross}</Text>
+                  <Text style={styles.periodTotalValue}>{t.currency(fmt(periodGross))}</Text>
                 </View>
               )}
             </>
@@ -315,22 +477,22 @@ export default function App() {
 
         {/* ── Annual Bonuses ── */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Annual Bonuses — optional</Text>
+          <Text style={styles.sectionTitle}>{t.annualBonuses}</Text>
 
-          <Text style={styles.label}>Performance Bonus (BDT)</Text>
+          <Text style={styles.label}>{t.perfBonus}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. 50,000"
+            placeholder={t.bonusPlaceholder50}
             placeholderTextColor="#aaa"
             keyboardType="numeric"
             value={performanceBonus}
             onChangeText={v => { setPerformanceBonus(v); setResult(null); }}
           />
 
-          <Text style={styles.label}>Festival Bonus (BDT)</Text>
+          <Text style={styles.label}>{t.festBonus}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. 100,000"
+            placeholder={t.bonusPlaceholder100}
             placeholderTextColor="#aaa"
             keyboardType="numeric"
             value={festivalBonus}
@@ -339,9 +501,9 @@ export default function App() {
 
           {(parse(performanceBonus) > 0 || parse(festivalBonus) > 0) && (
             <View style={styles.bonusTotalBox}>
-              <Text style={styles.bonusTotalLabel}>Total Bonuses</Text>
+              <Text style={styles.bonusTotalLabel}>{t.totalBonuses}</Text>
               <Text style={styles.bonusTotalValue}>
-                BDT {fmt(parse(performanceBonus) + parse(festivalBonus))}
+                {t.currency(fmt(parse(performanceBonus) + parse(festivalBonus)))}
               </Text>
             </View>
           )}
@@ -349,22 +511,22 @@ export default function App() {
 
         {/* ── Deductions ── */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Deductions & Credits</Text>
+          <Text style={styles.sectionTitle}>{t.deductions}</Text>
 
-          <Text style={styles.label}>Eligible Investment (BDT) — optional</Text>
+          <Text style={styles.label}>{t.investment}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. 100,000"
+            placeholder={t.investPlaceholder}
             placeholderTextColor="#aaa"
             keyboardType="numeric"
             value={investment}
             onChangeText={setInvestment}
           />
 
-          <Text style={styles.label}>Advance Income Tax / TDS Paid (BDT) — optional</Text>
+          <Text style={styles.label}>{t.ait}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. 20,000"
+            placeholder={t.aitPlaceholder}
             placeholderTextColor="#aaa"
             keyboardType="numeric"
             value={ait}
@@ -374,7 +536,7 @@ export default function App() {
 
         {/* ── Taxpayer Category ── */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Taxpayer Category</Text>
+          <Text style={styles.sectionTitle}>{t.taxpayerCat}</Text>
 
           <TouchableOpacity
             style={styles.dropdownBtn}
@@ -382,14 +544,14 @@ export default function App() {
             activeOpacity={0.8}
           >
             <Text style={styles.dropdownBtnText}>
-              {CATEGORIES.find(c => c.key === category)?.label}
+              {t.categories.find(c => c.key === category)?.label}
             </Text>
             <Text style={styles.dropdownArrow}>{showCategory ? '▲' : '▼'}</Text>
           </TouchableOpacity>
 
           {showCategory && (
             <View style={styles.dropdownList}>
-              {CATEGORIES.map(cat => (
+              {t.categories.map(cat => (
                 <TouchableOpacity
                   key={cat.key}
                   style={[styles.dropdownItem, category === cat.key && styles.dropdownItemActive]}
@@ -400,7 +562,7 @@ export default function App() {
                     {cat.label}
                   </Text>
                   <Text style={styles.dropdownItemLimit}>
-                    Free up to BDT {fmt(TAX_FREE_LIMITS[cat.key])}
+                    {t.freeUpTo(fmt(TAX_FREE_LIMITS[cat.key]))}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -409,8 +571,8 @@ export default function App() {
 
           <View style={[styles.toggleRow, { marginTop: 12 }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.toggleLabel}>Parent/Guardian of Disabled Person</Text>
-              <Text style={styles.hint}>+BDT 50,000 additional tax-free limit</Text>
+              <Text style={styles.toggleLabel}>{t.disabledDependent}</Text>
+              <Text style={styles.hint}>{t.disabledHint}</Text>
             </View>
             <Switch
               value={hasDisabledDependent}
@@ -423,7 +585,7 @@ export default function App() {
 
         {/* ── Calculate ── */}
         <TouchableOpacity style={styles.calcBtn} onPress={handleCalculate} activeOpacity={0.85}>
-          <Text style={styles.calcBtnText}>Calculate Tax</Text>
+          <Text style={styles.calcBtnText}>{t.calcBtn}</Text>
         </TouchableOpacity>
 
         {/* ── Error ── */}
@@ -436,23 +598,23 @@ export default function App() {
         {/* ── Results ── */}
         {result && !result.error && (
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Tax Calculation Summary</Text>
+            <Text style={styles.sectionTitle}>{t.resultTitle}</Text>
 
-            <Row label="Gross Annual Salary" value={`BDT ${fmt(result.gross)}`} />
+            <Row label={t.grossAnnual} value={t.currency(fmt(result.gross))} />
             {result.perfBonus > 0 && (
-              <Row label="  · Performance Bonus" value={`BDT ${fmt(result.perfBonus)}`} muted />
+              <Row label={t.perfBonusRow} value={t.currency(fmt(result.perfBonus))} muted />
             )}
             {result.festBonus > 0 && (
-              <Row label="  · Festival Bonus" value={`BDT ${fmt(result.festBonus)}`} muted />
+              <Row label={t.festBonusRow} value={t.currency(fmt(result.festBonus))} muted />
             )}
             {isSalaried && (
-              <Row label="Salary Exemption" value={`− BDT ${fmt(result.salaryExemption)}`} muted />
+              <Row label={t.salaryExemption} value={t.deductCurrency(fmt(result.salaryExemption))} muted />
             )}
-            <Row label="Taxable Income" value={`BDT ${fmt(result.taxableIncome)}`} bold />
-            <Row label="Tax-Free Limit" value={`BDT ${fmt(result.taxFreeLimit)}`} muted />
+            <Row label={t.taxableIncome} value={t.currency(fmt(result.taxableIncome))} bold />
+            <Row label={t.taxFreeLimit} value={t.currency(fmt(result.taxFreeLimit))} muted />
 
             <View style={styles.divider} />
-            <Text style={styles.slabHeader}>Progressive Tax Breakdown</Text>
+            <Text style={styles.slabHeader}>{t.slabHeader}</Text>
 
             {result.slabDetails.map((s, i) => (
               <View key={i} style={styles.slabRow}>
@@ -461,59 +623,58 @@ export default function App() {
                   <Text style={styles.slabRate}>@ {(s.rate * 100).toFixed(0)}%</Text>
                 </View>
                 <View style={styles.slabRight}>
-                  <Text style={styles.slabAmount}>BDT {fmt(s.chargeable)}</Text>
+                  <Text style={styles.slabAmount}>{t.currency(fmt(s.chargeable))}</Text>
                   <Text style={[styles.slabTax, s.tax === 0 && styles.zeroTax]}>
-                    Tax: BDT {fmt(s.tax)}
+                    {t.slabTax(fmt(s.tax))}
                   </Text>
                 </View>
               </View>
             ))}
 
             <View style={styles.divider} />
-            <Row label="Gross Tax Payable" value={`BDT ${fmt(result.grossTax)}`} bold />
+            <Row label={t.grossTax} value={t.currency(fmt(result.grossTax))} bold />
 
             {result.rebate > 0 && (
-              <Row label="Investment Tax Rebate" value={`− BDT ${fmt(result.rebate)}`} green />
+              <Row label={t.rebate} value={t.deductCurrency(fmt(result.rebate))} green />
             )}
-            <Row label="Tax After Rebate" value={`BDT ${fmt(result.taxAfterRebate)}`} />
+            <Row label={t.taxAfterRebate} value={t.currency(fmt(result.taxAfterRebate))} />
 
             {result.taxableIncome > result.taxFreeLimit && (
               <View style={styles.minimumTaxBox}>
                 <Text style={styles.minimumTaxText}>
-                  Minimum tax applicable: BDT {fmt(result.minimumTax)}
-                  {result.finalTax === result.minimumTax && result.taxAfterRebate < result.minimumTax
-                    ? '  ← applied' : ''}
+                  {t.minTax(
+                    fmt(result.minimumTax),
+                    result.finalTax === result.minimumTax && result.taxAfterRebate < result.minimumTax
+                  )}
                 </Text>
               </View>
             )}
 
             {result.aitPaid > 0 && (
-              <Row label="AIT / TDS Already Paid" value={`− BDT ${fmt(result.aitPaid)}`} green />
+              <Row label={t.aitPaid} value={t.deductCurrency(fmt(result.aitPaid))} green />
             )}
 
             <View style={styles.divider} />
             <View style={styles.netTaxRow}>
-              <Text style={styles.netTaxLabel}>Net Tax Payable</Text>
+              <Text style={styles.netTaxLabel}>{t.netTax}</Text>
               <Text style={[styles.netTaxValue, result.netTaxPayable === 0 && styles.zeroTax]}>
-                BDT {fmt(result.netTaxPayable)}
+                {t.currency(fmt(result.netTaxPayable))}
               </Text>
             </View>
 
             {result.netTaxPayable === 0 && result.grossTax > 0 && (
               <Text style={styles.refundHint}>
-                * AIT/TDS exceeds liability — possible refund of BDT {fmt(result.aitPaid - result.finalTax)}.
+                {t.refundHint(fmt(result.aitPaid - result.finalTax))}
               </Text>
             )}
           </View>
         )}
 
         <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
-          <Text style={styles.resetBtnText}>Reset</Text>
+          <Text style={styles.resetBtnText}>{t.resetBtn}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.footer}>
-          For reference only. Consult the NBR or a tax professional for official advice.
-        </Text>
+        <Text style={styles.footer}>{t.footer}</Text>
       </ScrollView>
     </View>
   );
@@ -521,7 +682,7 @@ export default function App() {
 
 // ─── PeriodRow ────────────────────────────────────────────────────────────────
 
-function PeriodRow({ period, idx, openPicker, onTogglePicker, onUpdate, onRemove, canRemove }) {
+function PeriodRow({ period, idx, openPicker, onTogglePicker, onUpdate, onRemove, canRemove, t }) {
   const isFromOpen = openPicker?.id === period.id && openPicker?.field === 'from';
   const isToOpen = openPicker?.id === period.id && openPicker?.field === 'to';
   const numMonths = period.toIdx - period.fromIdx + 1;
@@ -531,13 +692,12 @@ function PeriodRow({ period, idx, openPicker, onTogglePicker, onUpdate, onRemove
 
   return (
     <View style={styles.periodCard}>
-      {/* Header */}
       <View style={styles.periodHeader}>
-        <Text style={styles.periodLabel}>Period {idx + 1}</Text>
+        <Text style={styles.periodLabel}>{t.periodLabel(idx + 1)}</Text>
         <View style={styles.periodHeaderRight}>
           {numMonths > 0 && (
             <View style={styles.periodBadge}>
-              <Text style={styles.periodBadgeText}>{numMonths} mo</Text>
+              <Text style={styles.periodBadgeText}>{t.months(numMonths)}</Text>
             </View>
           )}
           {canRemove && (
@@ -552,17 +712,16 @@ function PeriodRow({ period, idx, openPicker, onTogglePicker, onUpdate, onRemove
         </View>
       </View>
 
-      {/* From / To row */}
       <View style={styles.periodDateRow}>
         <View style={styles.periodDateCol}>
-          <Text style={styles.periodDateLabel}>FROM</Text>
+          <Text style={styles.periodDateLabel}>{t.from}</Text>
           <TouchableOpacity
             style={[styles.monthBtn, isFromOpen && styles.monthBtnActive]}
             onPress={() => onTogglePicker(period.id, 'from')}
             activeOpacity={0.8}
           >
             <Text style={[styles.monthBtnText, isFromOpen && styles.monthBtnTextActive]}>
-              {FY_MONTHS[period.fromIdx]}
+              {t.fyMonths[period.fromIdx]}
             </Text>
             <Text style={styles.monthBtnArrow}>{isFromOpen ? '▲' : '▼'}</Text>
           </TouchableOpacity>
@@ -573,24 +732,23 @@ function PeriodRow({ period, idx, openPicker, onTogglePicker, onUpdate, onRemove
         </View>
 
         <View style={styles.periodDateCol}>
-          <Text style={styles.periodDateLabel}>TO</Text>
+          <Text style={styles.periodDateLabel}>{t.to}</Text>
           <TouchableOpacity
             style={[styles.monthBtn, isToOpen && styles.monthBtnActive]}
             onPress={() => onTogglePicker(period.id, 'to')}
             activeOpacity={0.8}
           >
             <Text style={[styles.monthBtnText, isToOpen && styles.monthBtnTextActive]}>
-              {FY_MONTHS[period.toIdx]}
+              {t.fyMonths[period.toIdx]}
             </Text>
             <Text style={styles.monthBtnArrow}>{isToOpen ? '▲' : '▼'}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* From month picker */}
       {isFromOpen && (
         <ScrollView style={styles.monthPickerScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-          {FY_MONTHS.map((m, i) => (
+          {t.fyMonths.map((m, i) => (
             <TouchableOpacity
               key={i}
               style={[styles.monthPickerItem, period.fromIdx === i && styles.monthPickerItemActive]}
@@ -611,10 +769,9 @@ function PeriodRow({ period, idx, openPicker, onTogglePicker, onUpdate, onRemove
         </ScrollView>
       )}
 
-      {/* To month picker */}
       {isToOpen && (
         <ScrollView style={styles.monthPickerScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-          {FY_MONTHS.map((m, i) => (
+          {t.fyMonths.map((m, i) => (
             <TouchableOpacity
               key={i}
               style={[
@@ -641,11 +798,10 @@ function PeriodRow({ period, idx, openPicker, onTogglePicker, onUpdate, onRemove
         </ScrollView>
       )}
 
-      {/* Amount + /mo /yr toggle */}
       <View style={styles.periodAmountRow}>
         <TextInput
           style={[styles.input, styles.periodAmountInput]}
-          placeholder="Salary amount (BDT)"
+          placeholder={t.salaryAmountPlaceholder}
           placeholderTextColor="#aaa"
           keyboardType="numeric"
           value={period.amount}
@@ -658,7 +814,7 @@ function PeriodRow({ period, idx, openPicker, onTogglePicker, onUpdate, onRemove
             activeOpacity={0.7}
           >
             <Text style={[styles.periodModeBtnText, period.isMonthly && styles.periodModeBtnTextActive]}>
-              /mo
+              {t.perMonth}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -667,7 +823,7 @@ function PeriodRow({ period, idx, openPicker, onTogglePicker, onUpdate, onRemove
             activeOpacity={0.7}
           >
             <Text style={[styles.periodModeBtnText, !period.isMonthly && styles.periodModeBtnTextActive]}>
-              /yr
+              {t.perYear}
             </Text>
           </TouchableOpacity>
         </View>
@@ -675,7 +831,7 @@ function PeriodRow({ period, idx, openPicker, onTogglePicker, onUpdate, onRemove
 
       {subtotal > 0 && (
         <Text style={styles.periodSubtotal}>
-          Subtotal for this period: BDT {fmt(subtotal)}
+          {t.subtotal(fmt(subtotal))}
         </Text>
       )}
     </View>
@@ -711,8 +867,17 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingHorizontal: 20,
   },
-  headerTitle: { color: '#fff', fontSize: 22, fontWeight: '700', letterSpacing: 0.3 },
-  headerSub: { color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 3 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerTitle: { color: '#fff', fontSize: 20, fontWeight: '700', letterSpacing: 0.3, flex: 1, paddingRight: 10 },
+  langBtn: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+  },
+  langBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 48 },
@@ -730,7 +895,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: GREEN, marginBottom: 12 },
 
-  // Mode tabs
   modeTabs: {
     flexDirection: 'row',
     backgroundColor: '#f0f2f5',
@@ -749,7 +913,6 @@ const styles = StyleSheet.create({
   modeTabText: { fontSize: 13, color: '#888', fontWeight: '500' },
   modeTabTextActive: { color: GREEN, fontWeight: '700' },
 
-  // Inputs
   label: { fontSize: 13, color: '#555', marginBottom: 5, marginTop: 10 },
   input: {
     borderWidth: 1.5,
@@ -767,7 +930,6 @@ const styles = StyleSheet.create({
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   toggleLabel: { fontSize: 14, color: '#333', flex: 1, paddingRight: 8 },
 
-  // Period cards
   periodCard: {
     borderWidth: 1.5,
     borderColor: '#e2e8f0',
@@ -884,7 +1046,6 @@ const styles = StyleSheet.create({
   periodTotalLabel: { fontSize: 13, color: GREEN, fontWeight: '600' },
   periodTotalValue: { fontSize: 15, color: GREEN, fontWeight: '700' },
 
-  // Category dropdown
   dropdownBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -917,7 +1078,6 @@ const styles = StyleSheet.create({
   dropdownItemTextActive: { color: GREEN, fontWeight: '600' },
   dropdownItemLimit: { fontSize: 11.5, color: '#888', marginTop: 1 },
 
-  // Buttons
   calcBtn: {
     backgroundColor: GREEN,
     borderRadius: 12,
@@ -953,7 +1113,6 @@ const styles = StyleSheet.create({
   },
   errorText: { color: '#c0392b', fontSize: 14 },
 
-  // Results
   divider: { height: 1, backgroundColor: '#eee', marginVertical: 12 },
 
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 },
