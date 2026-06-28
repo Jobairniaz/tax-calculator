@@ -1,6 +1,7 @@
 {
   "expo": {
-    "name": "tax-koto",
+    "name": "Tax Koto",
+    "description": "BD Tax Calculator",
     "slug": "tax-koto",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,7 +16,8 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.jobair_niaz.taxkoto"
     },
     "web": {
       "favicon": "./assets/favicon.png"
