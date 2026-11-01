@@ -10,12 +10,14 @@ import {
   Share,
   Platform,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { GREEN, GREEN_LIGHT } from '../constants';
 import { fmt } from '../utils/taxCalc';
 
-export default function ShareModal({ visible, onClose, result, isSalaried, t, cardRef, showWatermark, onToggleWatermark }) {
+export default function ShareModal({ visible, onClose, result, isSalaried, cardRef, showWatermark, onToggleWatermark }) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
 
   async function handleShareImage() {
@@ -27,7 +29,7 @@ export default function ShareModal({ visible, onClose, result, isSalaried, t, ca
       if (available) {
         await Sharing.shareAsync(uri, {
           mimeType: 'image/png',
-          dialogTitle: t.shareTitle,
+          dialogTitle: t('shareTitle'),
           UTI: 'public.png',
         });
       }
@@ -43,7 +45,7 @@ export default function ShareModal({ visible, onClose, result, isSalaried, t, ca
     setBusy(true);
     try {
       const text = buildShareText(result, isSalaried, t, showWatermark);
-      await Share.share({ message: text, title: t.shareTitle });
+      await Share.share({ message: text, title: t('shareTitle') });
     } catch (_) {
       // silently fail — user cancelled
     } finally {
@@ -62,11 +64,11 @@ export default function ShareModal({ visible, onClose, result, isSalaried, t, ca
       <TouchableOpacity style={modalStyles.backdrop} activeOpacity={1} onPress={onClose} />
       <View style={modalStyles.sheet}>
         <View style={modalStyles.handle} />
-        <Text style={modalStyles.title}>{t.shareResult}</Text>
+        <Text style={modalStyles.title}>{t('shareResult')}</Text>
 
         {/* Watermark toggle */}
         <View style={modalStyles.toggleRow}>
-          <Text style={modalStyles.toggleLabel}>{t.includeWatermark}</Text>
+          <Text style={modalStyles.toggleLabel}>{t('includeWatermark')}</Text>
           <Switch
             value={showWatermark}
             onValueChange={onToggleWatermark}
@@ -78,17 +80,17 @@ export default function ShareModal({ visible, onClose, result, isSalaried, t, ca
         {busy ? (
           <View style={modalStyles.busyRow}>
             <ActivityIndicator color={GREEN} />
-            <Text style={modalStyles.busyText}>{t.sharing}</Text>
+            <Text style={modalStyles.busyText}>{t('sharing')}</Text>
           </View>
         ) : (
           <View style={modalStyles.btnGroup}>
             <TouchableOpacity style={modalStyles.primaryBtn} onPress={handleShareImage} activeOpacity={0.85}>
               <Text style={modalStyles.primaryBtnIcon}>🖼</Text>
-              <Text style={modalStyles.primaryBtnText}>{t.shareAsImage}</Text>
+              <Text style={modalStyles.primaryBtnText}>{t('shareAsImage')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={modalStyles.secondaryBtn} onPress={handleShareText} activeOpacity={0.85}>
               <Text style={modalStyles.secondaryBtnIcon}>📋</Text>
-              <Text style={modalStyles.secondaryBtnText}>{t.shareAsText}</Text>
+              <Text style={modalStyles.secondaryBtnText}>{t('shareAsText')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -102,42 +104,42 @@ export default function ShareModal({ visible, onClose, result, isSalaried, t, ca
 }
 
 function buildShareText(result, isSalaried, t, showWatermark) {
-  const c = t.currency;
-  const dc = t.deductCurrency;
+  const c = value => t('currency', { value });
+  const dc = value => t('deductCurrency', { value });
   const lines = [
-    `📊 ${t.shareTitle}`,
+    `📊 ${t('shareTitle')}`,
     `${'─'.repeat(36)}`,
-    `${t.grossAnnual}: ${c(fmt(result.gross))}`,
+    `${t('grossAnnual')}: ${c(fmt(result.gross))}`,
   ];
 
-  if (result.perfBonus > 0) lines.push(`${t.perfBonusRow.trim()}: ${c(fmt(result.perfBonus))}`);
-  if (result.festBonus > 0) lines.push(`${t.festBonusRow.trim()}: ${c(fmt(result.festBonus))}`);
-  if (isSalaried) lines.push(`${t.salaryExemption}: ${dc(fmt(result.salaryExemption))}`);
+  if (result.perfBonus > 0) lines.push(`${t('perfBonusRow').trim()}: ${c(fmt(result.perfBonus))}`);
+  if (result.festBonus > 0) lines.push(`${t('festBonusRow').trim()}: ${c(fmt(result.festBonus))}`);
+  if (isSalaried) lines.push(`${t('salaryExemption')}: ${dc(fmt(result.salaryExemption))}`);
 
   lines.push(
-    `${t.taxableIncome}: ${c(fmt(result.taxableIncome))}`,
-    `${t.taxFreeLimit}: ${c(fmt(result.taxFreeLimit))}`,
+    `${t('taxableIncome')}: ${c(fmt(result.taxableIncome))}`,
+    `${t('taxFreeLimit')}: ${c(fmt(result.taxFreeLimit))}`,
     `${'─'.repeat(36)}`,
-    `📈 ${t.slabHeader}`,
+    `📈 ${t('slabHeader')}`,
   );
 
   for (const s of result.slabDetails) {
     if (s.rate > 0) {
-      lines.push(`  ${s.label} @ ${(s.rate * 100).toFixed(0)}%: ${c(fmt(s.tax))}`);
+      lines.push(`  ${t(s.labelKey, { value: fmt(s.limit) })} @ ${(s.rate * 100).toFixed(0)}%: ${c(fmt(s.tax))}`);
     }
   }
 
   lines.push(
     `${'─'.repeat(36)}`,
-    `${t.grossTax}: ${c(fmt(result.grossTax))}`,
+    `${t('grossTax')}: ${c(fmt(result.grossTax))}`,
   );
 
-  if (result.rebate > 0) lines.push(`${t.rebate}: ${dc(fmt(result.rebate))}`);
-  if (result.aitPaid > 0) lines.push(`${t.aitPaid}: ${dc(fmt(result.aitPaid))}`);
+  if (result.rebate > 0) lines.push(`${t('rebate')}: ${dc(fmt(result.rebate))}`);
+  if (result.aitPaid > 0) lines.push(`${t('aitPaid')}: ${dc(fmt(result.aitPaid))}`);
 
   lines.push(
     `${'─'.repeat(36)}`,
-    `💰 ${t.netTax}: ${c(fmt(result.netTaxPayable))}`,
+    `💰 ${t('netTax')}: ${c(fmt(result.netTaxPayable))}`,
   );
 
   if (showWatermark) {

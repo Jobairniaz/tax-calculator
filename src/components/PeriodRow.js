@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { parse, fmt } from '../utils/taxCalc';
 import { GREEN } from '../constants';
 import styles from '../styles';
 
-export default function PeriodRow({ period, idx, openPicker, onTogglePicker, onUpdate, onRemove, canRemove, t }) {
+export default function PeriodRow({ period, idx, openPicker, onTogglePicker, onUpdate, onRemove, canRemove }) {
+  const { t } = useTranslation();
+  const fyMonths = t('fyMonths', { returnObjects: true });
   const isFromOpen = openPicker?.id === period.id && openPicker?.field === 'from';
   const isToOpen = openPicker?.id === period.id && openPicker?.field === 'to';
   const numMonths = period.toIdx - period.fromIdx + 1;
@@ -15,11 +18,11 @@ export default function PeriodRow({ period, idx, openPicker, onTogglePicker, onU
   return (
     <View style={styles.periodCard}>
       <View style={styles.periodHeader}>
-        <Text style={styles.periodLabel}>{t.periodLabel(idx + 1)}</Text>
+        <Text style={styles.periodLabel}>{t('periodLabel', { value: idx + 1 })}</Text>
         <View style={styles.periodHeaderRight}>
           {numMonths > 0 && (
             <View style={styles.periodBadge}>
-              <Text style={styles.periodBadgeText}>{t.months(numMonths)}</Text>
+              <Text style={styles.periodBadgeText}>{t('months', { value: numMonths })}</Text>
             </View>
           )}
           {canRemove && (
@@ -36,14 +39,14 @@ export default function PeriodRow({ period, idx, openPicker, onTogglePicker, onU
 
       <View style={styles.periodDateRow}>
         <View style={styles.periodDateCol}>
-          <Text style={styles.periodDateLabel}>{t.from}</Text>
+          <Text style={styles.periodDateLabel}>{t('from')}</Text>
           <TouchableOpacity
             style={[styles.monthBtn, isFromOpen && styles.monthBtnActive]}
             onPress={() => onTogglePicker(period.id, 'from')}
             activeOpacity={0.8}
           >
             <Text style={[styles.monthBtnText, isFromOpen && styles.monthBtnTextActive]}>
-              {t.fyMonths[period.fromIdx]}
+              {fyMonths[period.fromIdx]}
             </Text>
             <Text style={styles.monthBtnArrow}>{isFromOpen ? '▲' : '▼'}</Text>
           </TouchableOpacity>
@@ -54,14 +57,14 @@ export default function PeriodRow({ period, idx, openPicker, onTogglePicker, onU
         </View>
 
         <View style={styles.periodDateCol}>
-          <Text style={styles.periodDateLabel}>{t.to}</Text>
+          <Text style={styles.periodDateLabel}>{t('to')}</Text>
           <TouchableOpacity
             style={[styles.monthBtn, isToOpen && styles.monthBtnActive]}
             onPress={() => onTogglePicker(period.id, 'to')}
             activeOpacity={0.8}
           >
             <Text style={[styles.monthBtnText, isToOpen && styles.monthBtnTextActive]}>
-              {t.fyMonths[period.toIdx]}
+              {fyMonths[period.toIdx]}
             </Text>
             <Text style={styles.monthBtnArrow}>{isToOpen ? '▲' : '▼'}</Text>
           </TouchableOpacity>
@@ -70,7 +73,7 @@ export default function PeriodRow({ period, idx, openPicker, onTogglePicker, onU
 
       {isFromOpen && (
         <ScrollView style={styles.monthPickerScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-          {t.fyMonths.map((m, i) => (
+          {fyMonths.map((m, i) => (
             <TouchableOpacity
               key={i}
               style={[styles.monthPickerItem, period.fromIdx === i && styles.monthPickerItemActive]}
@@ -90,7 +93,7 @@ export default function PeriodRow({ period, idx, openPicker, onTogglePicker, onU
 
       {isToOpen && (
         <ScrollView style={styles.monthPickerScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-          {t.fyMonths.map((m, i) => (
+          {fyMonths.map((m, i) => (
             <TouchableOpacity
               key={i}
               style={[
@@ -120,7 +123,7 @@ export default function PeriodRow({ period, idx, openPicker, onTogglePicker, onU
       <View style={styles.periodAmountRow}>
         <TextInput
           style={[styles.input, styles.periodAmountInput]}
-          placeholder={t.salaryAmountPlaceholder}
+          placeholder={t('salaryAmountPlaceholder')}
           placeholderTextColor="#aaa"
           keyboardType="numeric"
           value={period.amount}
@@ -133,7 +136,7 @@ export default function PeriodRow({ period, idx, openPicker, onTogglePicker, onU
             activeOpacity={0.7}
           >
             <Text style={[styles.periodModeBtnText, period.isMonthly && styles.periodModeBtnTextActive]}>
-              {t.perMonth}
+              {t('perMonth')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -142,7 +145,7 @@ export default function PeriodRow({ period, idx, openPicker, onTogglePicker, onU
             activeOpacity={0.7}
           >
             <Text style={[styles.periodModeBtnText, !period.isMonthly && styles.periodModeBtnTextActive]}>
-              {t.perYear}
+              {t('perYear')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -150,7 +153,7 @@ export default function PeriodRow({ period, idx, openPicker, onTogglePicker, onU
 
       {subtotal > 0 && (
         <Text style={styles.periodSubtotal}>
-          {t.subtotal(fmt(subtotal))}
+          {t('subtotal', { value: fmt(subtotal) })}
         </Text>
       )}
     </View>

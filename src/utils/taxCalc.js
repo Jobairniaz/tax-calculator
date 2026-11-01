@@ -11,26 +11,17 @@ export function calcSalaryExemption(gross) {
   return Math.min(gross / 3, 500000);
 }
 
-export function calcTax(taxableIncome, taxFreeLimit, lang) {
+export function calcTax(taxableIncome, taxFreeLimit) {
   if (taxableIncome <= taxFreeLimit) return { grossTax: 0, slabDetails: [] };
 
-  const slabs = lang === 'bn'
-    ? [
-        { label: `প্রথম ${fmt(taxFreeLimit)} টাকা`, limit: taxFreeLimit, rate: 0 },
-        { label: 'পরবর্তী ৩,০০,০০০ টাকা', limit: 300000, rate: 0.10 },
-        { label: 'পরবর্তী ৪,০০,০০০ টাকা', limit: 400000, rate: 0.15 },
-        { label: 'পরবর্তী ৫,০০,০০০ টাকা', limit: 500000, rate: 0.20 },
-        { label: 'পরবর্তী ২০,০০,০০০ টাকা', limit: 2000000, rate: 0.25 },
-        { label: 'অবশিষ্ট অংশ', limit: Infinity, rate: 0.30 },
-      ]
-    : [
-        { label: `First BDT ${fmt(taxFreeLimit)}`, limit: taxFreeLimit, rate: 0 },
-        { label: 'Next BDT 3,00,000', limit: 300000, rate: 0.10 },
-        { label: 'Next BDT 4,00,000', limit: 400000, rate: 0.15 },
-        { label: 'Next BDT 5,00,000', limit: 500000, rate: 0.20 },
-        { label: 'Next BDT 20,00,000', limit: 2000000, rate: 0.25 },
-        { label: 'Remaining Balance', limit: Infinity, rate: 0.30 },
-      ];
+  const slabs = [
+    { labelKey: 'slabs.first', limit: taxFreeLimit, rate: 0 },
+    { labelKey: 'slabs.next3Lakh', limit: 300000, rate: 0.10 },
+    { labelKey: 'slabs.next4Lakh', limit: 400000, rate: 0.15 },
+    { labelKey: 'slabs.next5Lakh', limit: 500000, rate: 0.20 },
+    { labelKey: 'slabs.next20Lakh', limit: 2000000, rate: 0.25 },
+    { labelKey: 'slabs.remaining', limit: Infinity, rate: 0.30 },
+  ];
 
   let remaining = taxableIncome;
   let grossTax = 0;
@@ -40,7 +31,7 @@ export function calcTax(taxableIncome, taxFreeLimit, lang) {
     if (remaining <= 0) break;
     const chargeable = slab.limit === Infinity ? remaining : Math.min(remaining, slab.limit);
     const tax = chargeable * slab.rate;
-    slabDetails.push({ label: slab.label, chargeable, rate: slab.rate, tax });
+    slabDetails.push({ labelKey: slab.labelKey, limit: slab.limit, chargeable, rate: slab.rate, tax });
     grossTax += tax;
     remaining -= chargeable;
   }
@@ -50,7 +41,7 @@ export function calcTax(taxableIncome, taxFreeLimit, lang) {
 
 export function calcRebate(taxableIncome, investment) {
   if (!investment || investment <= 0) return 0;
-  return Math.min(taxableIncome * 0.03, investment * 0.15, 1000000);
+  return Math.min(taxableIncome * 0.03, investment * 0.10, 750000);
 }
 
 export function grossFromPeriods(periods) {

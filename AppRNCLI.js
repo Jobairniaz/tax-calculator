@@ -20,14 +20,17 @@ import {
   StatusBar,
 } from 'react-native';
 
+// Finance Act 2026, Schedule 2 — AY 2026-27 and AY 2027-28
 const TAX_FREE_LIMITS = {
-  general: 375000,
-  women_senior: 425000,
-  challenged_third: 500000,
-  freedom_fighter: 525000,
+  general: 400000,
+  women_senior: 450000,
+  challenged_third: 525000,
+  freedom_fighter: 550000,
 };
 
 const MINIMUM_TAX = 5000;
+const NEW_TAXPAYER_MINIMUM_TAX = 1000;
+const DISABLED_DEPENDENT_ALLOWANCE = 50000;
 
 function calculateSalaryExemption(grossSalary) {
   return Math.min(grossSalary / 3, 500000);
@@ -65,7 +68,7 @@ function calculateTax(taxableIncome, taxFreeLimit) {
 
 function calculateRebate(taxableIncome, investment) {
   if (!investment || investment <= 0) return 0;
-  return Math.min(taxableIncome * 0.03, investment * 0.15, 1000000);
+  return Math.min(taxableIncome * 0.03, investment * 0.10, 750000);
 }
 
 function fmt(n) {
@@ -76,8 +79,8 @@ function fmt(n) {
 const CATEGORIES = [
   { key: 'general', label: 'General (Male < 65)' },
   { key: 'women_senior', label: 'Women / Senior (65+)' },
-  { key: 'challenged_third', label: 'Physically Challenged / Third Gender' },
-  { key: 'freedom_fighter', label: 'Gazetted Freedom Fighter' },
+  { key: 'challenged_third', label: 'Person with Disability / Third Gender' },
+  { key: 'freedom_fighter', label: 'Gazetted War-Wounded Freedom Fighter / July Warrior' },
 ];
 
 export default function App() {
@@ -85,7 +88,8 @@ export default function App() {
   const [investment, setInvestment] = useState('');
   const [ait, setAit] = useState('');
   const [category, setCategory] = useState('general');
-  const [hasDisabledDependent, setHasDisabledDependent] = useState(false);
+  const [disabledDependents, setDisabledDependents] = useState('');
+  const [isNewTaxpayer, setIsNewTaxpayer] = useState(false);
   const [isSalaried, setIsSalaried] = useState(true);
   const [result, setResult] = useState(null);
   const [showCategory, setShowCategory] = useState(false);
@@ -100,8 +104,8 @@ export default function App() {
       return;
     }
 
-    let taxFreeLimit = TAX_FREE_LIMITS[category];
-    if (hasDisabledDependent) taxFreeLimit += 50000;
+    const dependents = Math.max(0, Math.floor(parseFloat(disabledDependents) || 0));
+    const taxFreeLimit = TAX_FREE_LIMITS[category] + dependents * DISABLED_DEPENDENT_ALLOWANCE;
 
     const salaryExemption = isSalaried ? calculateSalaryExemption(gross) : 0;
     const taxableIncome = Math.max(0, gross - salaryExemption);
@@ -110,7 +114,8 @@ export default function App() {
 
     const rebate = calculateRebate(taxableIncome, inv);
     const taxAfterRebate = Math.max(0, grossTax - rebate);
-    const minimumTax = taxableIncome > taxFreeLimit ? MINIMUM_TAX : 0;
+    const applicableMinimum = isNewTaxpayer ? NEW_TAXPAYER_MINIMUM_TAX : MINIMUM_TAX;
+    const minimumTax = taxableIncome > taxFreeLimit ? applicableMinimum : 0;
     const finalTax = Math.max(taxAfterRebate, minimumTax);
     const netTaxPayable = Math.max(0, finalTax - aitPaid);
 
@@ -126,7 +131,8 @@ export default function App() {
     setInvestment('');
     setAit('');
     setCategory('general');
-    setHasDisabledDependent(false);
+    setDisabledDependents('');
+    setIsNewTaxpayer(false);
     setIsSalaried(true);
     setResult(null);
     setShowCategory(false);
@@ -233,14 +239,27 @@ export default function App() {
             </View>
           )}
 
+          <Text style={styles.label}>Disabled Children / Wards (Parent/Guardian) — optional</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. 1"
+            placeholderTextColor="#aaa"
+            keyboardType="numeric"
+            value={disabledDependents}
+            onChangeText={setDisabledDependents}
+          />
+          <Text style={styles.hint}>
+            +BDT 50,000 tax-free limit for each. If both parents are taxpayers, only one can claim.
+          </Text>
+
           <View style={styles.toggleRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.toggleLabel}>Parent/Guardian of Disabled Person</Text>
-              <Text style={styles.hint}>+BDT 50,000 additional tax-free limit</Text>
+              <Text style={styles.toggleLabel}>New Taxpayer</Text>
+              <Text style={styles.hint}>Minimum tax is BDT 1,000 instead of BDT 5,000</Text>
             </View>
             <Switch
-              value={hasDisabledDependent}
-              onValueChange={setHasDisabledDependent}
+              value={isNewTaxpayer}
+              onValueChange={setIsNewTaxpayer}
               trackColor={{ false: '#ccc', true: GREEN }}
               thumbColor="#fff"
             />

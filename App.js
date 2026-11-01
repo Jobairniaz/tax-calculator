@@ -8,9 +8,12 @@ import {
   Switch,
   StatusBar,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
-import { GREEN, TAX_FREE_LIMITS } from './src/constants';
-import T from './src/translations';
+import './src/i18n';
+import {
+  GREEN, TAX_FREE_LIMITS, MINIMUM_TAX, NEW_TAXPAYER_MINIMUM_TAX, DISABLED_DEPENDENT_ALLOWANCE,
+} from './src/constants';
 import {
   fmt, parse,
   calcSalaryExemption, calcTax, calcRebate,
@@ -22,8 +25,7 @@ import ResultCard from './src/components/ResultCard';
 import ShareModal from './src/components/ShareModal';
 
 export default function App() {
-  const [lang, setLang] = useState('en');
-  const t = T[lang];
+  const { t, i18n } = useTranslation();
 
   const [inputMode, setInputMode] = useState('annual');
   const [grossSalary, setGrossSalary] = useState('');
@@ -37,7 +39,8 @@ export default function App() {
   const [investment, setInvestment] = useState('');
   const [ait, setAit] = useState('');
   const [category, setCategory] = useState('general');
-  const [hasDisabledDependent, setHasDisabledDependent] = useState(false);
+  const [disabledDependents, setDisabledDependents] = useState('');
+  const [isNewTaxpayer, setIsNewTaxpayer] = useState(false);
   const [isSalaried, setIsSalaried] = useState(true);
   const [showCategory, setShowCategory] = useState(false);
   const [result, setResult] = useState(null);
@@ -76,25 +79,29 @@ export default function App() {
     return salary + bonuses;
   }
 
+  function getTaxFreeLimit() {
+    const dependents = Math.max(0, Math.floor(parse(disabledDependents)));
+    return TAX_FREE_LIMITS[category] + dependents * DISABLED_DEPENDENT_ALLOWANCE;
+  }
+
   function handleCalculate() {
     const gross = getGrossAnnual();
     const inv = parse(investment);
     const aitPaid = parse(ait);
 
     if (gross <= 0) {
-      setResult({ error: t.errorMsg });
+      setResult({ errorKey: 'errorMsg' });
       return;
     }
 
-    let taxFreeLimit = TAX_FREE_LIMITS[category];
-    if (hasDisabledDependent) taxFreeLimit += 50000;
-
+    const taxFreeLimit = getTaxFreeLimit();
     const salaryExemption = isSalaried ? calcSalaryExemption(gross) : 0;
     const taxableIncome = Math.max(0, gross - salaryExemption);
-    const { grossTax, slabDetails } = calcTax(taxableIncome, taxFreeLimit, lang);
+    const { grossTax, slabDetails } = calcTax(taxableIncome, taxFreeLimit);
     const rebate = calcRebate(taxableIncome, inv);
     const taxAfterRebate = Math.max(0, grossTax - rebate);
-    const minimumTax = taxableIncome > taxFreeLimit ? 5000 : 0;
+    const applicableMinimum = isNewTaxpayer ? NEW_TAXPAYER_MINIMUM_TAX : MINIMUM_TAX;
+    const minimumTax = taxableIncome > taxFreeLimit ? applicableMinimum : 0;
     const finalTax = Math.max(taxAfterRebate, minimumTax);
     const netTaxPayable = Math.max(0, finalTax - aitPaid);
 
@@ -127,23 +134,15 @@ export default function App() {
     setInvestment('');
     setAit('');
     setCategory('general');
-    setHasDisabledDependent(false);
+    setDisabledDependents('');
+    setIsNewTaxpayer(false);
     setIsSalaried(true);
     setShowCategory(false);
     setResult(null);
   }
 
   function toggleLang() {
-    const next = lang === 'en' ? 'bn' : 'en';
-    setLang(next);
-    if (result && !result.error) {
-      let taxFreeLimit = TAX_FREE_LIMITS[category];
-      if (hasDisabledDependent) taxFreeLimit += 50000;
-      const salaryExemption = isSalaried ? calcSalaryExemption(result.gross) : 0;
-      const taxableIncome = Math.max(0, result.gross - salaryExemption);
-      const { grossTax, slabDetails } = calcTax(taxableIncome, taxFreeLimit, next);
-      setResult(prev => ({ ...prev, slabDetails, grossTax }));
-    }
+    i18n.changeLanguage(i18n.language === 'en' ? 'bn' : 'en');
   }
 
   const periodGross = inputMode === 'period' ? grossFromPeriods(periods) : 0;
@@ -156,9 +155,9 @@ export default function App() {
       {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>{t.appTitle}</Text>
+          <Text style={styles.headerTitle}>{t('appTitle')}</Text>
           <TouchableOpacity style={styles.langBtn} onPress={toggleLang} activeOpacity={0.8}>
-            <Text style={styles.langBtnText}>{t.langBtn}</Text>
+            <Text style={styles.langBtnText}>{t('langBtn')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -167,13 +166,13 @@ export default function App() {
 
         {/* ── Income Details ── */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t.incomeDetails}</Text>
+          <Text style={styles.sectionTitle}>{t('incomeDetails')}</Text>
 
           <View style={styles.modeTabs}>
             {[
-              { key: 'annual', label: t.annual },
-              { key: 'monthly', label: t.monthly },
-              { key: 'period', label: t.byPeriod },
+              { key: 'annual', label: t('annual') },
+              { key: 'monthly', label: t('monthly') },
+              { key: 'period', label: t('byPeriod') },
             ].map(m => (
               <TouchableOpacity
                 key={m.key}
@@ -189,31 +188,31 @@ export default function App() {
           </View>
 
           <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>{t.salariedIncome}</Text>
+            <Text style={styles.toggleLabel}>{t('salariedIncome')}</Text>
             <Switch value={isSalaried} onValueChange={setIsSalaried} trackColor={{ false: '#ccc', true: GREEN }} thumbColor="#fff" />
           </View>
-          {isSalaried && <Text style={styles.hint}>{t.salariedHint}</Text>}
+          {isSalaried && <Text style={styles.hint}>{t('salariedHint')}</Text>}
 
           {inputMode !== 'period' && (
             <>
-              <Text style={styles.label}>{inputMode === 'annual' ? t.annualGross : t.monthlyGross}</Text>
+              <Text style={styles.label}>{inputMode === 'annual' ? t('annualGross') : t('monthlyGross')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder={inputMode === 'annual' ? t.annualPlaceholder : t.monthlyPlaceholder}
+                placeholder={inputMode === 'annual' ? t('annualPlaceholder') : t('monthlyPlaceholder')}
                 placeholderTextColor="#aaa"
                 keyboardType="numeric"
                 value={grossSalary}
                 onChangeText={setGrossSalary}
               />
               {inputMode === 'monthly' && monthlyEquivalent > 0 && (
-                <Text style={styles.convertHint}>{t.annualEquiv(fmt(monthlyEquivalent))}</Text>
+                <Text style={styles.convertHint}>{t('annualEquiv', { value: fmt(monthlyEquivalent) })}</Text>
               )}
             </>
           )}
 
           {inputMode === 'period' && (
             <>
-              <Text style={styles.hint}>{t.periodHint}</Text>
+              <Text style={styles.hint}>{t('periodHint')}</Text>
               {periods.map((period, idx) => (
                 <PeriodRow
                   key={period.id}
@@ -224,16 +223,15 @@ export default function App() {
                   onUpdate={updatePeriod}
                   onRemove={removePeriod}
                   canRemove={periods.length > 1}
-                  t={t}
                 />
               ))}
               <TouchableOpacity style={styles.addPeriodBtn} onPress={addPeriod} activeOpacity={0.75}>
-                <Text style={styles.addPeriodBtnText}>{t.addPeriod}</Text>
+                <Text style={styles.addPeriodBtnText}>{t('addPeriod')}</Text>
               </TouchableOpacity>
               {periodGross > 0 && (
                 <View style={styles.periodTotalBox}>
-                  <Text style={styles.periodTotalLabel}>{t.calcAnnualGross}</Text>
-                  <Text style={styles.periodTotalValue}>{t.currency(fmt(periodGross))}</Text>
+                  <Text style={styles.periodTotalLabel}>{t('calcAnnualGross')}</Text>
+                  <Text style={styles.periodTotalValue}>{t('currency', { value: fmt(periodGross) })}</Text>
                 </View>
               )}
             </>
@@ -242,20 +240,20 @@ export default function App() {
 
         {/* ── Annual Bonuses ── */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t.annualBonuses}</Text>
-          <Text style={styles.label}>{t.perfBonus}</Text>
+          <Text style={styles.sectionTitle}>{t('annualBonuses')}</Text>
+          <Text style={styles.label}>{t('perfBonus')}</Text>
           <TextInput
             style={styles.input}
-            placeholder={t.bonusPlaceholder50}
+            placeholder={t('bonusPlaceholder50')}
             placeholderTextColor="#aaa"
             keyboardType="numeric"
             value={performanceBonus}
             onChangeText={v => { setPerformanceBonus(v); setResult(null); }}
           />
-          <Text style={styles.label}>{t.festBonus}</Text>
+          <Text style={styles.label}>{t('festBonus')}</Text>
           <TextInput
             style={styles.input}
-            placeholder={t.bonusPlaceholder100}
+            placeholder={t('bonusPlaceholder100')}
             placeholderTextColor="#aaa"
             keyboardType="numeric"
             value={festivalBonus}
@@ -263,9 +261,9 @@ export default function App() {
           />
           {(parse(performanceBonus) > 0 || parse(festivalBonus) > 0) && (
             <View style={styles.bonusTotalBox}>
-              <Text style={styles.bonusTotalLabel}>{t.totalBonuses}</Text>
+              <Text style={styles.bonusTotalLabel}>{t('totalBonuses')}</Text>
               <Text style={styles.bonusTotalValue}>
-                {t.currency(fmt(parse(performanceBonus) + parse(festivalBonus)))}
+                {t('currency', { value: fmt(parse(performanceBonus) + parse(festivalBonus)) })}
               </Text>
             </View>
           )}
@@ -273,20 +271,20 @@ export default function App() {
 
         {/* ── Deductions ── */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t.deductions}</Text>
-          <Text style={styles.label}>{t.investment}</Text>
+          <Text style={styles.sectionTitle}>{t('deductions')}</Text>
+          <Text style={styles.label}>{t('investment')}</Text>
           <TextInput
             style={styles.input}
-            placeholder={t.investPlaceholder}
+            placeholder={t('investPlaceholder')}
             placeholderTextColor="#aaa"
             keyboardType="numeric"
             value={investment}
             onChangeText={setInvestment}
           />
-          <Text style={styles.label}>{t.ait}</Text>
+          <Text style={styles.label}>{t('ait')}</Text>
           <TextInput
             style={styles.input}
-            placeholder={t.aitPlaceholder}
+            placeholder={t('aitPlaceholder')}
             placeholderTextColor="#aaa"
             keyboardType="numeric"
             value={ait}
@@ -296,66 +294,75 @@ export default function App() {
 
         {/* ── Taxpayer Category ── */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t.taxpayerCat}</Text>
+          <Text style={styles.sectionTitle}>{t('taxpayerCat')}</Text>
           <TouchableOpacity style={styles.dropdownBtn} onPress={() => setShowCategory(!showCategory)} activeOpacity={0.8}>
-            <Text style={styles.dropdownBtnText}>{t.categories.find(c => c.key === category)?.label}</Text>
+            <Text style={styles.dropdownBtnText}>{t(`categories.${category}`)}</Text>
             <Text style={styles.dropdownArrow}>{showCategory ? '▲' : '▼'}</Text>
           </TouchableOpacity>
           {showCategory && (
             <View style={styles.dropdownList}>
-              {t.categories.map(cat => (
+              {Object.keys(TAX_FREE_LIMITS).map(key => (
                 <TouchableOpacity
-                  key={cat.key}
-                  style={[styles.dropdownItem, category === cat.key && styles.dropdownItemActive]}
-                  onPress={() => { setCategory(cat.key); setShowCategory(false); }}
+                  key={key}
+                  style={[styles.dropdownItem, category === key && styles.dropdownItemActive]}
+                  onPress={() => { setCategory(key); setShowCategory(false); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.dropdownItemText, category === cat.key && styles.dropdownItemTextActive]}>
-                    {cat.label}
+                  <Text style={[styles.dropdownItemText, category === key && styles.dropdownItemTextActive]}>
+                    {t(`categories.${key}`)}
                   </Text>
-                  <Text style={styles.dropdownItemLimit}>{t.freeUpTo(fmt(TAX_FREE_LIMITS[cat.key]))}</Text>
+                  <Text style={styles.dropdownItemLimit}>{t('freeUpTo', { value: fmt(TAX_FREE_LIMITS[key]) })}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
+          <Text style={styles.label}>{t('disabledDependent')}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={t('disabledPlaceholder')}
+            placeholderTextColor="#aaa"
+            keyboardType="numeric"
+            value={disabledDependents}
+            onChangeText={setDisabledDependents}
+          />
+          <Text style={styles.hint}>{t('disabledHint')}</Text>
           <View style={[styles.toggleRow, { marginTop: 12 }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.toggleLabel}>{t.disabledDependent}</Text>
-              <Text style={styles.hint}>{t.disabledHint}</Text>
+              <Text style={styles.toggleLabel}>{t('newTaxpayer')}</Text>
+              <Text style={styles.hint}>{t('newTaxpayerHint')}</Text>
             </View>
-            <Switch value={hasDisabledDependent} onValueChange={setHasDisabledDependent} trackColor={{ false: '#ccc', true: GREEN }} thumbColor="#fff" />
+            <Switch value={isNewTaxpayer} onValueChange={setIsNewTaxpayer} trackColor={{ false: '#ccc', true: GREEN }} thumbColor="#fff" />
           </View>
         </View>
 
         {/* ── Calculate ── */}
         <TouchableOpacity style={styles.calcBtn} onPress={handleCalculate} activeOpacity={0.85}>
-          <Text style={styles.calcBtnText}>{t.calcBtn}</Text>
+          <Text style={styles.calcBtnText}>{t('calcBtn')}</Text>
         </TouchableOpacity>
 
         {/* ── Error ── */}
-        {result?.error && (
+        {result?.errorKey && (
           <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{result.error}</Text>
+            <Text style={styles.errorText}>{t(result.errorKey)}</Text>
           </View>
         )}
 
         {/* ── Results ── */}
-        {result && !result.error && (
+        {result && !result.errorKey && (
           <ResultCard
             ref={resultCardRef}
             result={result}
             isSalaried={isSalaried}
-            t={t}
             showWatermark={showWatermark}
             onSharePress={() => setShareModalVisible(true)}
           />
         )}
 
         <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
-          <Text style={styles.resetBtnText}>{t.resetBtn}</Text>
+          <Text style={styles.resetBtnText}>{t('resetBtn')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.footer}>{t.footer}</Text>
+        <Text style={styles.footer}>{t('footer')}</Text>
       </ScrollView>
 
       {/* ── Share Modal ── */}
@@ -364,7 +371,6 @@ export default function App() {
         onClose={() => setShareModalVisible(false)}
         result={result}
         isSalaried={isSalaried}
-        t={t}
         cardRef={resultCardRef}
         showWatermark={showWatermark}
         onToggleWatermark={setShowWatermark}
